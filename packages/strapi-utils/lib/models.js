@@ -9,6 +9,7 @@ const path = require('path');
 
 // Public node modules.
 const _ = require('lodash');
+const pluralize = require('pluralize');
 
 // Following this discussion https://stackoverflow.com/questions/18082/validate-decimal-numbers-in-javascript-isnumeric this function is the best implem to determine if a value is a valid number candidate
 const isNumeric = (value) => {
@@ -310,6 +311,16 @@ module.exports = {
   },
 
   /**
+   * Return table name for a collection many-to-many
+   */
+  getCollectionName: (associationA, associationB) => {
+    return [associationA, associationB]
+      .sort((a, b) => a.collection < b.collection ? -1 : 1)
+      .map(table => _.snakeCase(`${pluralize.plural(table.collection)} ${pluralize.plural(table.via)}`))
+      .join('__');
+  },
+
+  /**
    * Define associations key to models
    */
 
@@ -338,7 +349,7 @@ module.exports = {
 
       // Build associations object
       if (association.hasOwnProperty('collection') && association.collection !== '*') {
-        definition.associations.push({
+        const ast = {
           alias: key,
           type: 'collection',
           collection: association.collection,
@@ -348,7 +359,13 @@ module.exports = {
           dominant: details.dominant !== true,
           plugin: association.plugin || undefined,
           filter: details.filter,
-        });
+        };
+
+        if (infos.nature === 'manyToMany' && definition.orm === 'bookshelf') {
+          ast.tableCollectionName = this.getCollectionName(association, details);
+        }
+
+        definition.associations.push(ast);
       } else if (association.hasOwnProperty('model') && association.model !== '*') {
         definition.associations.push({
           alias: key,
@@ -477,7 +494,7 @@ module.exports = {
         formattedValue = value;
       }
 
-      if (_.includes(['_start', '_limit'], key)) {
+      if (_.includes(['_start', '_limit', '_populate'], key)) {
         result = convertor(formattedValue, key);
       } else if (key === '_sort') {
         const [attr, order = 'ASC'] = formattedValue.split(':');
@@ -486,12 +503,12 @@ module.exports = {
         const suffix = key.split('_');
         // Mysql stores boolean as 1 or 0
         if (client === 'mysql' && _.get(models, [model, 'attributes', suffix, 'type']) === 'boolean') {
-          formattedValue = value === 'true' ? '1' : '0';
+          formattedValue = value.toString() === 'true' ? '1' : '0';
         }
 
         let type;
 
-        if (_.includes(['ne', 'lt', 'gt', 'lte', 'gte', 'contains', 'containss', 'in'], _.last(suffix))) {
+        if (_.includes(['ne', 'lt', 'gt', 'lte', 'gte', 'contains', 'containss', 'in', 'nin'], _.last(suffix))) {
           type = `_${_.last(suffix)}`;
           key = _.dropRight(suffix).join('_');
         } else {

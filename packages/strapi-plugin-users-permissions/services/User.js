@@ -73,8 +73,8 @@ module.exports = {
    * @return {Promise}
    */
 
-  fetchAll: (params) => {
-    return strapi.query('user', 'users-permissions').find(strapi.utils.models.convertParams('user', params));
+  fetchAll: (params, populate) => {
+    return strapi.query('user', 'users-permissions').find(params, populate);
   },
 
   hashPassword: function (user = {}) {
@@ -109,7 +109,7 @@ module.exports = {
       params.model = 'user';
       params.id = (params._id || params.id);
 
-      await strapi.plugins['content-manager'].services['contentmanager'].delete(params, {source: 'users-permissions'});
+      return await strapi.plugins['content-manager'].services['contentmanager'].delete(params, {source: 'users-permissions'});
     }
 
     return strapi.query('user', 'users-permissions').delete(params);

@@ -17,12 +17,29 @@ module.exports = {
    * @return Object
    */
 
-  convertToParams: params => {
+  convertToParams: (params, primaryKey) => {
     return Object.keys(params).reduce((acc, current) => {
-      return Object.assign(acc, {
-        [`_${current}`]: params[current],
-      });
+      const key = current === 'id' ? primaryKey : `_${current}`;
+      acc[key] = params[current];
+      return acc;
     }, {});
+  },
+
+  convertToQuery: function(params) {
+    const result = {};
+
+    _.forEach(params, (value, key) => {
+      if (_.isPlainObject(value)) {
+        const flatObject = this.convertToQuery(value);
+        _.forEach(flatObject, (_value, _key) => {
+          result[`${key}.${_key}`] = _value;
+        });
+      } else {
+        result[key] = value;
+      }
+    });
+
+    return result;
   },
 
   /**
@@ -31,7 +48,7 @@ module.exports = {
    * @return String
    */
 
-  amountLimiting: params => {
+  amountLimiting: (params = {}) => {
     if (params.limit && params.limit < 0) {
       params.limit = 0;
     } else if (params.limit && params.limit > strapi.plugins.graphql.config.amountLimit) {
@@ -52,9 +69,7 @@ module.exports = {
       model: name,
     };
 
-    const model = plugin
-      ? strapi.plugins[plugin].models[name]
-      : strapi.models[name];
+    const model = plugin ? strapi.plugins[plugin].models[name] : strapi.models[name];
 
     // Extract custom resolver or type description.
     const { resolver: handler = {} } = _schema;
@@ -64,9 +79,7 @@ module.exports = {
     if (isSingular === 'force') {
       queryName = name;
     } else {
-      queryName = isSingular
-        ? pluralize.singular(name)
-        : pluralize.plural(name);
+      queryName = isSingular ? pluralize.singular(name) : pluralize.plural(name);
     }
 
     // Retrieve policies.
@@ -77,7 +90,7 @@ module.exports = {
 
     const policiesFn = [];
 
-    // Boolean to define if the resolver is going to be a resolver or not.
+    // Boolean to define if the resolver is going to be a controller or not.
     let isController = false;
 
     // Retrieve resolver. It could be the custom resolver of the user
@@ -87,9 +100,7 @@ module.exports = {
       const resolver = _.get(handler, `Query.${queryName}.resolver`);
 
       if (_.isString(resolver) || _.isPlainObject(resolver)) {
-        const { handler = resolver } = _.isPlainObject(resolver)
-          ? resolver
-          : {};
+        const { handler = resolver } = _.isPlainObject(resolver) ? resolver : {};
 
         // Retrieve the controller's action to be executed.
         const [name, action] = handler.split('.');
@@ -99,9 +110,7 @@ module.exports = {
           : _.get(strapi.controllers, `${_.toLower(name)}.${action}`);
 
         if (!controller) {
-          return new Error(
-            `Cannot find the controller's action ${name}.${action}`,
-          );
+          return new Error(`Cannot find the controller's action ${name}.${action}`);
         }
 
         // We're going to return a controller instead.
@@ -115,8 +124,8 @@ module.exports = {
               handler: `${name}.${action}`,
             },
             undefined,
-            plugin,
-          ),
+            plugin
+          )
         );
 
         // Return the controller.
@@ -129,9 +138,7 @@ module.exports = {
       // We're going to return a controller instead.
       isController = true;
 
-      const controllers = plugin
-        ? strapi.plugins[plugin].controllers
-        : strapi.controllers;
+      const controllers = plugin ? strapi.plugins[plugin].controllers : strapi.controllers;
 
       // Try to find the controller that should be related to this model.
       const controller = isSingular
@@ -140,9 +147,7 @@ module.exports = {
 
       if (!controller) {
         return new Error(
-          `Cannot find the controller's action ${name}.${
-            isSingular ? 'findOne' : 'find'
-          }`,
+          `Cannot find the controller's action ${name}.${isSingular ? 'findOne' : 'find'}`
         );
       }
 
@@ -155,8 +160,8 @@ module.exports = {
             handler: `${name}.${isSingular ? 'findOne' : 'find'}`,
           },
           undefined,
-          plugin,
-        ),
+          plugin
+        )
       );
 
       // Make the query compatible with our controller by
@@ -165,7 +170,7 @@ module.exports = {
         return async (ctx, next) => {
           ctx.params = {
             ...params,
-            [model.primaryKey]: ctx.params.id,
+            [model.primaryKey]: ctx.query[model.primaryKey],
           };
 
           // Return the controller.
@@ -174,15 +179,7 @@ module.exports = {
       }
 
       // Plural.
-      return async (ctx, next) => {
-        ctx.params = this.amountLimiting(ctx.params);
-        ctx.query = Object.assign(
-          this.convertToParams(_.omit(ctx.params, 'where')),
-          ctx.params.where,
-        );
-
-        return controller(ctx, next);
-      };
+      return controller;
     })();
 
     // The controller hasn't been found.
@@ -200,9 +197,7 @@ module.exports = {
         : _.get(strapi.controllers, `${_.toLower(name)}.${action}`);
 
       if (!controller) {
-        return new Error(
-          `Cannot find the controller's action ${name}.${action}`,
-        );
+        return new Error(`Cannot find the controller's action ${name}.${action}`);
       }
 
       policiesFn[0] = policyUtils.globalPolicy(
@@ -211,7 +206,7 @@ module.exports = {
           handler: `${name}.${action}`,
         },
         undefined,
-        plugin,
+        plugin
       );
     }
 
@@ -221,16 +216,12 @@ module.exports = {
 
     // Populate policies.
     policies.forEach(policy =>
-      policyUtils.get(
-        policy,
-        plugin,
-        policiesFn,
-        `GraphQL query "${queryName}"`,
-        name,
-      ),
+      policyUtils.get(policy, plugin, policiesFn, `GraphQL query "${queryName}"`, name)
     );
 
-    return async (obj, options, { context }) => {
+    return async (obj, options = {}, { context }) => {
+      const _options = _.cloneDeep(options);
+
       // Hack to be able to handle permissions for each query.
       const ctx = Object.assign(_.clone(context), {
         request: Object.assign(_.clone(context.request), {
@@ -242,10 +233,7 @@ module.exports = {
       const policy = await strapi.koaMiddlewares.compose(policiesFn)(ctx);
 
       // Policy doesn't always return errors but they update the current context.
-      if (
-        _.isError(ctx.request.graphql) ||
-        _.get(ctx.request.graphql, 'isBoom')
-      ) {
+      if (_.isError(ctx.request.graphql) || _.get(ctx.request.graphql, 'isBoom')) {
         return ctx.request.graphql;
       }
 
@@ -256,11 +244,26 @@ module.exports = {
 
       // Resolver can be a function. Be also a native resolver or a controller's action.
       if (_.isFunction(resolver)) {
-        context.query = this.convertToParams(options);
-        context.params = this.amountLimiting(options);
+        // Note: we've to used the Object.defineProperties to reset the prototype. It seems that the cloning the context
+        // cause a lost of the Object prototype.
+        Object.defineProperties(ctx, {
+          query: {
+            value: {
+              ...this.convertToParams(_.omit(_options, 'where'), model.primaryKey),
+              ...this.convertToQuery(_options.where),
+            },
+            writable: true,
+            configurable: true,
+          },
+          params: {
+            value: this.convertToParams(this.amountLimiting(_options), model.primaryKey),
+            writable: true,
+            configurable: true,
+          },
+        });
 
         if (isController) {
-          const values = await resolver.call(null, context);
+          const values = await resolver.call(null, ctx, null);
 
           if (ctx.body) {
             return ctx.body;
@@ -269,7 +272,7 @@ module.exports = {
           return values && values.toJSON ? values.toJSON() : values;
         }
 
-        return resolver.call(null, obj, options, context);
+        return resolver.call(null, obj, _options, ctx);
       }
 
       // Resolver can be a promise.

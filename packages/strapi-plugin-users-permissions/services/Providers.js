@@ -46,9 +46,7 @@ exports.connect = (provider, query) => {
 
       try {
         const users = await strapi.query('user', 'users-permissions').find({
-          where: {
-            email: profile.email
-          }
+          email: profile.email
         });
 
         const advanced = await strapi.store({

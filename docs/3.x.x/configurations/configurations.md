@@ -130,6 +130,26 @@ module.exports = {
 };
 ```
 
+### Bookshelf, Mongoose
+
+**Path —** `./config/functions/bookshelf.js`.
+**Path —** `./config/functions/mongoose.js`.
+
+When present, they are loaded to let you customize your database connection instance, for example for adding some plugin, customizing parameters, etc.
+
+As an example, for using the `mongoose-simple-random` plugin for MongoDB, you can register it like this:
+
+**Path —** `./config/functions/mongoose.js`.
+```js
+'use strict';
+
+const random = require('mongoose-simple-random');
+
+module.exports = (mongoose, connection) => {
+  mongoose.plugin(random);
+};
+```
+
 ***
 
 ## Locales
@@ -182,6 +202,14 @@ You can access the config of the current environment through `strapi.config.curr
       - `ssl` (boolean): For ssl database connection.
       - `debug` (boolean): Show database exchanges and errors.
       - `autoMigration` (boolean): To disable auto tables/columns creation for SQL database.
+      - `pool` Options used for database connection pooling. For more information look at [Knex's pool config documentation](https://knexjs.org/#Installation-pooling).
+        - `min` (integer): Minimum number of connections to keep in the pool. Default value: `0`.
+        - `max` (integer): Maximum number of connections to keep in the pool. Default value: `10`.
+        - `acquireTimeoutMillis` (integer): Maximum time in milliseconds to wait for acquiring a connection from the pool. Default value: `2000` (2 seconds).
+        - `createTimeoutMillis` (integer): Maximum time in milliseconds to wait for creating a connection to be added to the pool. Default value: `2000` (2 seconds).
+        - `idleTimeoutMillis` (integer): Number of milliseconds to wait before destroying idle connections. Default value: `30000` (30 seconds).
+        - `reapIntervalMillis` (integer): How often to check for idle connections in milliseconds. Default value: `1000` (1 second).
+        - `createRetryIntervalMillis` (integer): How long to idle after a failed create before trying again in milliseconds. Default value: `200`.
 
 #### Example
 
@@ -248,7 +276,9 @@ You can access the config of the current environment through `strapi.config.curr
 }
 ```
 
-> Please refer to the [dynamic configurations section](#dynamic-configurations) to use global environment variable to configure the databases.
+::: note
+Please refer to the [dynamic configurations section](#dynamic-configurations) to use global environment variable to configure the databases.
+:::
 
 #### MLab Example
 
@@ -276,8 +306,9 @@ You can access the config of the current environment through `strapi.config.curr
 }
 ```
 
-> Please note that you must give your MLab database name as the authenticationDatabase and your password can not contain the "@" symbol.
-
+::: note
+Please note that you must give your MLab database name as the authenticationDatabase and your password can not contain the "@" symbol.
+:::
 
 
 ***
@@ -299,8 +330,8 @@ You can access the config of the current environment through `strapi.config.curr
    - `exposeInContext` (boolean): Expose logger in context so it can be used through `strapi.log.info(‘my log’)`. Default value: `true`.
    - `requests` (boolean): Enable or disable requests logs. Default value: `false`.
  - `parser`
-  - `enabled`(boolean): Enable or disable parser. Default value: `true`.
-  - `multipart` (boolean): Enable or disable multipart bodies parsing. Default value: `true`.
+   - `enabled`(boolean): Enable or disable parser. Default value: `true`.
+   - `multipart` (boolean): Enable or disable multipart bodies parsing. Default value: `true`.
 
 ::: note
 The session doesn't work with `mongo` as a client. The package that we should use is broken for now.
@@ -313,9 +344,12 @@ The session doesn't work with `mongo` as a client. The package that we should us
 **Path —** `./config/environments/**/response.json`.
 
  - [`gzip`](https://en.wikipedia.org/wiki/Gzip)
-  - `enabled` (boolean): Enable or not GZIP response compression.
+   - `enabled` (boolean): Enable or not GZIP response compression.
  - `responseTime`
-  - `enabled` (boolean): Enable or not `X-Response-Time header` to response. Default value: `false`.
+   - `enabled` (boolean): Enable or not `X-Response-Time header` to response. Default value: `false`.
+ - `poweredBy`
+   - `enabled` (boolean): Enable or not `X-Powered-By` header to response. Default value: `true`.
+   - `value` (string): The value of the header. Default value: `Strapi <strapi.io>`
 
 ***
 
@@ -330,20 +364,20 @@ The session doesn't work with `mongo` as a client. The package that we should us
  - [`csp`](https://en.wikipedia.org/wiki/Content_Security_Policy)
    - `enabled` (boolean): Enable or disable CSP to avoid Cross Site Scripting (XSS) and data injection attacks.
  - [`p3p`](https://en.wikipedia.org/wiki/P3P)
-  - `enabled` (boolean): Enable or disable p3p.
+   - `enabled` (boolean): Enable or disable p3p.
  - [`hsts`](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security)
-  - `enabled` (boolean): Enable or disable HSTS.
-  - `maxAge` (integer): Number of seconds HSTS is in effect. Default value: `31536000`.
-  - `includeSubDomains` (boolean): Applies HSTS to all subdomains of the host. Default value: `true`.
+   - `enabled` (boolean): Enable or disable HSTS.
+   - `maxAge` (integer): Number of seconds HSTS is in effect. Default value: `31536000`.
+   - `includeSubDomains` (boolean): Applies HSTS to all subdomains of the host. Default value: `true`.
  - [`xframe`](https://en.wikipedia.org/wiki/Clickjacking)
    - `enabled` (boolean): Enable or disable `X-FRAME-OPTIONS` headers in response.
    - `value` (string): The value for the header, e.g. DENY, SAMEORIGIN or ALLOW-FROM uri. Default value: `SAMEORIGIN`.
  - [`xss`](https://en.wikipedia.org/wiki/Cross-site_scripting)
-  - `enabled` (boolean): Enable or disable XSS to prevent Cross Site Scripting (XSS) attacks in older IE browsers (IE8).
+   - `enabled` (boolean): Enable or disable XSS to prevent Cross Site Scripting (XSS) attacks in older IE browsers (IE8).
  - [`cors`](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-  - `enabled` (boolean): Enable or disable CORS to prevent your server to be requested from another domain.
-  - `origin` (string): Allowed URLs (`http://example1.com, http://example2.com` or allows everyone `*`). Default value: `http://localhost`.
-  - `expose` (array): Configures the `Access-Control-Expose-Headers` CORS header. If not specified, no custom headers are exposed. Default value: `["WWW-Authenticate", "Server-Authorization"]`.
+   - `enabled` (boolean): Enable or disable CORS to prevent your server to be requested from another domain.
+   - `origin` (string): Allowed URLs (`http://example1.com, http://example2.com` or allows everyone `*`). Default value: `http://localhost`.
+   - `expose` (array): Configures the `Access-Control-Expose-Headers` CORS header. If not specified, no custom headers are exposed. Default value: `["WWW-Authenticate", "Server-Authorization"]`.
    - `maxAge` (integer): Configures the `Access-Control-Max-Age` CORS header. Default value: `31536000`.
    - `credentials` (boolean): Configures the `Access-Control-Allow-Credentials` CORS header. Default value: `true`.
    - `methods` (array)|String - Configures the `Access-Control-Allow-Methods` CORS header. Default value: `["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]`.
@@ -365,21 +399,21 @@ The session doesn't work with `mongo` as a client. The package that we should us
    - `enabled` (boolean): Enable or disabled server reload on files update. Default value: depends on the environment.
  - `emitErrors` (boolean): Enable errors to be emitted to `koa` when they happen in order to attach custom logic or use error reporting services.
  - `proxy`
-  - `enabled` (boolean): Enable proxy support such as Apache or Nginx. Default value: `false`.
-  - `ssl` (boolean): Enable proxy SSL support
-  - `host` (string): Host name your proxy service uses for Strapi.
-  - `port` (integer): Port that your proxy service accepts connections on.
+   - `enabled` (boolean): Enable proxy support such as Apache or Nginx. Default value: `false`.
+   - `ssl` (boolean): Enable proxy SSL support
+   - `host` (string): Host name your proxy service uses for Strapi.
+   - `port` (integer): Port that your proxy service accepts connections on.
  - [`cron`](https://en.wikipedia.org/wiki/Cron)
-  - `enabled` (boolean): Enable or disable CRON tasks to schedule jobs at specific dates. Default value: `false`.
+   - `enabled` (boolean): Enable or disable CRON tasks to schedule jobs at specific dates. Default value: `false`.
  - `admin`
-  - `autoOpen` (boolean): Enable or disabled administration opening on start (default: `true`)
-  - `path` (string): Allow to change the URL to access the admin (default: `/admin`).
-  - `build`
-    - `host` (string): URL to access the admin panel (default: `http://localhost:1337/admin`).
-    - `backend` (string): URL that the admin panel and plugins will request (default: `http://localhost:1337`).
-      - `plugins`
-        - `source` (string): Define the source mode (origin, host, custom).
-        - `folder` (string): Indicate what the plugins folder in `host` source mode.
+   - `autoOpen` (boolean): Enable or disabled administration opening on start (default: `true`)
+   - `path` (string): Allow to change the URL to access the admin (default: `/admin`).
+   - `build`
+     - `host` (string): URL to access the admin panel (default: `http://localhost:1337/admin`).
+     - `backend` (string): URL that the admin panel and plugins will request (default: `http://localhost:1337`).
+       - `plugins`
+         - `source` (string): Define the source mode (origin, host, custom).
+         - `folder` (string): Indicate what the plugins folder in `host` source mode.
 
 #### Example
 

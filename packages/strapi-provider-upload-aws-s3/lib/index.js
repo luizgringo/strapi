@@ -53,12 +53,17 @@ module.exports = {
     }
   },
   init: (config) => {
-    // configure AWS S3 bucket connection
-    AWS.config.update({
-      accessKeyId: config.public,
-      secretAccessKey: config.private,
-      region: config.region
-    });
+
+    strapi.log.info("!!!!!!!!! ENTROU NA CARAMBA DO INIT DO STRAPI-PROVIDER-UPLOAD-AWS-S3 !!!!!!!!!");
+
+    // // configure AWS S3 bucket connection
+    // AWS.config.update({
+    //   accessKeyId: config.public,
+    //   secretAccessKey: config.private,
+    //   region: config.region
+    // });
+
+    AWS.config.credentials = new AWS.TemporaryCredentials();
 
     const S3 = new AWS.S3({
       apiVersion: '2006-03-01',

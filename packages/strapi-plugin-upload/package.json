@@ -22,7 +22,7 @@
     "prepublishOnly": "IS_MONOREPO=true npm run build"
   },
   "dependencies": {
-    "strapi-provider-upload-local": "3.0.0-alpha.26.2",
+    "strapi-provider-upload-local": "3.6.5",
     "strapi-utils": "3.0.0-alpha.26.2",
     "stream-to-array": "^2.3.0",
     "uuid": "^3.2.1"

@@ -52,7 +52,7 @@
     "koa-lusca": "~2.2.0",
     "koa-router-joi": "^1.0.1",
     "koa-session": "^5.5.1",
-    "koa-static": "^4.0.1",
+    "koa-static": "^5.0.0",
     "lodash": "^4.17.5",
     "node-fetch": "^1.7.3",
     "node-machine-id": "^1.1.10",

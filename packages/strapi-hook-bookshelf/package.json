@@ -22,7 +22,7 @@
     "pluralize": "^6.0.0",
     "rimraf": "^2.6.2",
     "strapi-hook-knex": "3.0.0-alpha.26.2",
-    "strapi-utils": "3.0.0-alpha.26.2"
+    "strapi-utils": "3.0.0"
   },
   "strapi": {
     "dependencies": [
